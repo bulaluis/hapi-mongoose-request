@@ -1,4 +1,4 @@
-# hapi-mongoose-requesr
+# hapi-mongoose-request
 
 Set models in every request for Hapi.js
 
