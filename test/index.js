@@ -11,13 +11,35 @@ var Mongoose = require('mongoose');
 // Tests
 
 var lab = exports.lab = Lab.script();
-var request = {
+var routes = [{
     method: 'GET',
-    url: '/tests'
-};
-var serverOne;
-var serverTWo;
+    path: '/{model}',
+    handler: function (request, reply) {
 
+        reply({model: request.Model});
+    }
+}, {
+    method: 'GET',
+    path: '/no_param',
+    handler: function (request, reply) {
+
+        reply({model: request.Model});
+    },
+    config: {
+        plugins: {
+            'hapi-mongoose-request': {
+                model: 'Test'
+            }
+        }
+    }
+}, {
+    method: 'GET',
+    path: '/no_model_and_param_else',
+    handler: function (request, reply) {
+
+        reply({ message: 'not found'}).code(404);
+    }
+}];
 
 lab.before(function (done) {
 
@@ -27,175 +49,137 @@ lab.before(function (done) {
             return done(err);
         }
 
-        var schema = new Mongoose.Schema({
+        Mongoose.model('Test', new Mongoose.Schema({
             name: String
-        });
-        Mongoose.model('Test', schema);     // This model apply to capitalize
+        }));
 
-        var schema = new Mongoose.Schema({
+        Mongoose.model('test', new Mongoose.Schema({
             name: String
-        });
-        Mongoose.model('test', schema);
+        }));
 
         return done();
     });
 });
 
+lab.experiment('hapi-mongoose-request', function () {
 
-// Set two instances with diferent plugin options
+    lab.experiment('with default options', function () {
 
-lab.before(function (done) {
-
-    serverOne = new Hapi.Server();
-    serverOne.connection({ port: 3000});
-    serverOne.register({
-        register: Plugin,
-        options: {}
-    }, function (err) {
-
-        if (err) {
-            return done(err);
-        }
-
-        return done();
-    });
-});
-
-
-lab.before(function (done) {
-
-    serverTWo = new Hapi.Server();
-    serverTWo.connection({ port: 3001});
-    serverTWo.register([{
-        register: Plugin,
-        options: {
-            singularize: false,
-            capitalize: false
-        }
-    }, {
-        register: HapiMongooseModels,
-        options: {
-            pattern: '../models/**/*.js',
-            options: {
-                cwd: __dirname
-            }
-        }
-    }], function (err) {
-
-        if (err) {
-            return done(err);
-        }
-
-        return done();
-    });
-});
-
-
-lab.experiment('Hapi-mongoose-request with default options', function () {
-
-    lab.experiment('inject request with model param', function () {
+        var server;
 
         lab.before(function (done) {
 
-            serverOne.route({
-                method: 'GET',
-                path: '/{model}',
-                handler: function (request, reply) {
-                    reply(request.Model);
-                }
-            });
-
+            server = new Hapi.Server();
+            server.connection({ port: 3000 });
             return done();
         });
 
-        lab.test('it returns mongoose model instance', function (done) {
+        lab.test('successfully registered', function (done) {
 
-            serverOne.inject(request, function (response) {
+            server.register(Plugin, function (err) {
 
-                Code.expect(response).to.be.a.object();
-
+                Code.expect(err).to.not.exist();
+                server.route(routes);
                 return done();
+            });
+        });
+
+        lab.experiment('inject request', function () {
+
+            lab.test('`GET /tests` it returns model instance', function (done) {
+
+                var request = {
+                    url: '/tests',
+                    method: 'GET'
+                };
+                server.inject(request, function (response) {
+
+                    Code.expect(response.result).to.include('model');
+                    Code.expect(response.result.model.modelName).to.be.equal('Test');
+                    return done();
+                });
+            });
+
+            lab.test('`GET /no_param` it returns model instance', function (done) {
+
+                var request = {
+                    url: '/no_param',
+                    method: 'GET'
+                };
+                server.inject(request, function (response) {
+
+                    Code.expect(response.result).to.include('model');
+                    Code.expect(response.result.model.modelName).to.be.equal('Test');
+                    return done();
+                });
             });
         });
     });
 
-    lab.experiment('specifying the model in the configuration of the route', function () {
+    lab.experiment('with `singularize: false, capitalize: false` and `hapi-mongoose-models` support', function () {
+
+        var server;
 
         lab.before(function (done) {
 
-            serverOne.route({
-                method: 'GET',
-                path: '/tests',
-                handler: function (request, reply) {
-                    reply(request.Model);
-                },
-                config: {
-                    plugins: {
-                        'Hapi-mongoose-request': {
-                            model: 'Test'
-                        }
+            server = new Hapi.Server();
+            server.connection({ port: 3000 });
+            return done();
+        });
+
+        lab.test('successfully registered', function (done) {
+
+            server.register([{
+                register: HapiMongooseModels,
+                options: {
+                    globPattern: '../models/**/*.js',
+                    globOptions: {
+                        cwd: __dirname
                     }
                 }
-            });
-
-            return done();
-        });
-
-        lab.test('it returns mongoose model instance', function (done) {
-
-            serverOne.inject(request, function (response) {
-
-                Code.expect(response).to.be.a.object();
-
-                return done();
-            });
-        });
-    });
-});
-
-
-lab.experiment('Hapi-mongoose-request with plugin `hapi-mongoose-models`', function () {
-
-    lab.experiment('inject request with model param', function () {
-
-        lab.before(function (done) {
-
-            serverTWo.route({
-                method: 'GET',
-                path: '/{model}',
-                handler: function (request, reply) {
-                    reply(request.Model);
+            }, {
+                register: Plugin,
+                options: {
+                    capitalize: false,
+                    singularize: false
                 }
-            });
+            }], function (err) {
 
-            return done();
-        });
-
-        lab.test('it returns mongoose model instance', function (done) {
-
-            var request = {
-                method: 'GET',
-                url: '/test2'
-            };
-
-            serverTWo.inject(request, function (response) {
-
-                Code.expect(response).to.be.a.object();
-
+                Code.expect(err).to.not.exist();
+                server.route(routes);
                 return done();
             });
         });
-    });
-});
 
+        lab.experiment('inject request', function () {
 
-lab.after(function (done) {
+            lab.test('`GET /test2` it returns model instance', function (done) {
 
-    serverOne.stop(function () {
+                var request = {
+                    url: '/test2',
+                    method: 'GET'
+                };
+                server.inject(request, function (response) {
 
-        serverTWo.stop(function () {
+                    Code.expect(response.result).to.include('model');
+                    Code.expect(response.result.model.modelName).to.be.equal('test2');
+                    return done();
+                });
+            });
 
-            return done();
-        }); 
+            lab.test('`GET /no_model_and_param_else` it returns Boom object with statusCode 404', function (done) {
+
+                var request = {
+                    url: '/no_model_and_param_else',
+                    method: 'GET'
+                };
+                server.inject(request, function (response) {
+
+                    Code.expect(response.statusCode).to.be.equal(404);
+                    Code.expect(response.result.isBoom).to.be.true;
+                    return done();
+                });
+            });
+        });
     });
 });

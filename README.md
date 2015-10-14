@@ -18,13 +18,13 @@ server.connection({ port: 8000 });
 server.register([{
         register: require('hapi-mongoose-connect'),
         options: {
-            uri: 'mongodb://localhost/my-database'
+            mongooseUri: 'mongodb://localhost/my-database'
         }
     }, {
         register: require('hapi-mongoose-models'),
         options: {
-            pattern: './models/**/*.js',
-            options: {
+            globPattern: './models/**/*.js',
+            globOptions: {
                 cwd: __dirname
             }
         }
@@ -40,12 +40,12 @@ server.register([{
         if (err) {
             throw err;
         }
-        
+
         server.route({
             method: 'GET',
             path: '/api/v1/{model}',     // The same is declared in the options
             method: function (request, reply) {
-                
+
                 if (request.Model) {
                     request.Model.find(function (err, docs) {
                         reply(err, docs);
