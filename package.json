@@ -1,12 +1,12 @@
 {
   "name": "hapi-mongoose-request",
-  "version": "1.0.2",
+  "version": "2.0.0",
   "description": "Set models in every request for Hapi.js",
   "main": "lib/index.js",
   "scripts": {
-    "test": "./node_modules/lab/bin/lab -c",
-    "test-coverage": "./node_modules/lab/bin/lab -t 100",
-    "test-coverage-html": "./node_modules/lab/bin/lab -c -r html -o ./test/artifacts/coverage.html && open ./test/artifacts/coverage.html"
+    "test": "./node_modules/@hapi/lab/bin/lab -c -C -v",
+    "test-coverage": "./node_modules/@hapi/lab/bin/lab -t 100",
+    "test-coverage-html": "./node_modules/@hapi/lab/bin/lab -c -r html -o ./test/artifacts/coverage.html && open ./test/artifacts/coverage.html"
   },
   "keywords": [
     "hapi-mongoose-request",
@@ -17,16 +17,18 @@
   "author": "Luis Miguel Bula Mora <bulaluis@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "hoek": "^2.16.3",
+    "@hapi/hoek": "^9.1.1",
     "inflection": "^1.7.1",
-    "joi": "^6.9.0",
-    "mongoose": "^4.1.10"
+    "joi": "^17.3.0",
+    "mongoose": "^5.11.13"
   },
   "devDependencies": {
-    "code": "^1.5.0",
-    "hapi": "^10.4.1",
-    "hapi-mongoose-models": "^1.0.3",
-    "lab": "^6.2.0"
+    "@hapi/code": "^8.0.2",
+    "@hapi/hapi": "^20.0.3",
+    "@hapi/lab": "^24.1.0",
+    "eslint": "^7.18.0",
+    "hapi-mongoose-models": "^2.0.0",
+    "mongoose": "^5.11.13"
   },
   "directories": {
     "test": "test"
